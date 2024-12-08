@@ -13,11 +13,13 @@
     "@emotion/styled": "^11.13.5",
     "@fontsource/roboto": "^5.1.0",
     "@mui/material": "^6.1.10",
+    "js-cookie": "^3.0.5",
     "next": "15.0.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

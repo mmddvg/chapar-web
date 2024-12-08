@@ -18,5 +18,5 @@ export default function Home() {
     return <div>Loading...</div>; // Show a loading state until user info is fetched
   }
 
-  return <div>hello world</div>
+  return <div>hello {user.username}</div>
 }
