@@ -60,7 +60,7 @@ export default function Home() {
         if (activeTab == 0)
             setPvMessages(res);
         else 
-        setGroups(res);
+        setGroupMessages(res);
     })
   },[selectedChat])
 
