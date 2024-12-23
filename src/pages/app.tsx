@@ -1,7 +1,5 @@
 'use client';
 
-import Image from "next/image";
-import styles from "./page.module.css";
 import { useJwt } from "@/context/jwt";
 import { useEffect, useState } from "react";
 import {  Backdrop, Box, CircularProgress, Grid2 } from "@mui/material";
@@ -9,29 +7,34 @@ import Header from "@/components/Header";
 import Menu from "@/components/Menu";
 import MessageList from "@/components/MessageList";
 import ChatList from "@/components/ChatList";
-import { Interface } from "readline";
 import Loader from "@/components/Loader";
 import Cookies from 'js-cookie';
+import useChatStore from "@/context/state";
 
 export default function Home() {
-    const token = Cookies.get('jwt');
+  const token : string = Cookies.get('jwt')??"";
 
   const { user } = useJwt();
-  const [selectedChat, setSelectedChat] = useState<string | null>(null); // Move useState outside conditional rendering
+  const [selectedChat, setSelectedChat] = useState<string | null>(null); 
 
 
-  const [chats,setChats] = useState<Chat[]>([]);
-  const [groups,setGroups] = useState<Chat[]>([]);
-  const [pvMessages,setPvMessages] = useState<PvMessage[]>([])
-  const [groupMessages,setGroupMessages] = useState<GroupMessage[]>([])
-  const [activeTab, setActiveTab] = useState(0);
-
+  const [activeTab, setActiveTab] = useState<0|1>(0);
+  
   useEffect(() => {
     if (!user) {
       console.log('Fetching user data...');
     }
   }, [user]);
 
+
+  let {addGroupChat, 
+   addPrivateChat, 
+   addChatter, 
+   addNonContactChatter,
+   privateChats, 
+   groupChats, 
+   chatters} = useChatStore(state => state);
+  
 
   useEffect(() => {
     fetch("http://localhost:8080/restricted/chats",{
@@ -40,37 +43,37 @@ export default function Home() {
             Authorization: `Bearer ${token}`,
           }
     }).then(res => res.json()).then(res => {
-        console.log("chats : " , res)
-        setChats(res.users);
-        setGroups(res.groups);
-    })
+        for (let i = 0;i< res.pvs.length;i++){
+          addPrivateChat({...res.pvs[i],messages:[]})
+        }
+        for (let i = 0;i< res.groups.length;i++){
+          addGroupChat({...res.groups[i],messages:[]})
+        }
+    });
+
+    fetch("http://localhost:8080/restricted/contacts",{
+      method:"GET",
+      headers: {
+          Authorization: `Bearer ${token}`,
+        }
+  }).then(res => res.json()).then(res => {
+    console.log("response : " , res);
+      for (let i of res){
+        addChatter(i,true);
+      }
+  });
   },[])
-  
+
   useEffect(() => {
-    if (!selectedChat){
-        return
-    }
-    fetch(`http://localhost:8080/restricted/${activeTab == 0 ? "pv" : "group"}/${selectedChat}/messages`,{
-        method:"GET",
-        headers: {
-            Authorization: `Bearer ${token}`,
-          }
-    }).then(res => res.json()).then(res => {
-        console.log("response ; " , res)
-        if (activeTab == 0)
-            setPvMessages(res);
-        else 
-        setGroupMessages(res);
-    })
-  },[selectedChat])
-
-
-
-
-  useEffect(()=>{
-    setPvMessages([])
-    setGroupMessages([])
-  },[activeTab])
+    for (let i of privateChats){
+    fetch(`http://localhost:8080/restricted/user/${i.user_id}`,{
+      method:"GET",
+      headers: {
+          Authorization: `Bearer ${token}`,
+        }
+  }).then(d => d.json()).then(d => addNonContactChatter({...d,contact_id:d.id},i.id)).catch(console.error)
+}
+  },[privateChats])
 
   if (!user) {
     return <Loader/>;
@@ -93,25 +96,16 @@ export default function Home() {
             backgroundColor: '#fff',
             boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.1)',
             }}>
-            <ChatList activeTab={activeTab} setActiveTab={setActiveTab} groupChats={groups} privateChats={chats} onSelectChat={setSelectedChat} selectedChat={selectedChat}/>
+            <ChatList activeTab={activeTab} setActiveTab={setActiveTab} onSelectChat={setSelectedChat} selectedChat={selectedChat}/>
         </Grid2>
 
         <Grid2 size={8} sx={{ display: 'flex', flexDirection: 'column', backgroundColor: '#f9fafb', padding: 2 }}>
         {selectedChat ? (
           <MessageList
-            chatName={chats.find((chat:any) => chat.id === selectedChat)?.name || 'Chat'}
-            messages={activeTab == 0 ? pvMessages:groupMessages}
-            onSendMessage={(content) => {
-              // Handle sending a new message
-              const newMessage = {
-                id: String((activeTab == 0 ? pvMessages:groupMessages).length + 1),
-                sender: 'You',
-                content,
-              };
-              // Add the new message to the current messages
-            //   setMessages((prevMessages : any) => [...prevMessages, newMessage]);
-            }}
-            setMessages={(prevMessages:any) => {[...prevMessages]}}
+          selectedChat={selectedChat}
+          token={token}
+          activeTab={activeTab}
+          chatName={activeTab == 0 ? (selectedChat ? (chatters.find(d => d.pv_id == selectedChat)?.name) : "Chats") : (groupChats.find((chat:any) => chat.id == selectedChat)?.name || 'Groups')}
           />
         ) : (
           <Box

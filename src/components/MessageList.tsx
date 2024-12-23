@@ -1,30 +1,95 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, TextField, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import useChatStore from '@/context/state';
 
-interface Message {
-  id: string;
-  sender: string;
-  content: string;
-  created_at : Date;
-}
 
 interface MessageListProps {
-  chatName: string;
-  messages: PvMessage[] | GroupMessage[] ;
-  onSendMessage: (content: string) => void;
-  setMessages: (prevMessages:any) => void
+  chatName?: string;
+
+  activeTab : 0 | 1;
+  selectedChat : string;
+  token : string;
+
 }
 
-const MessageList: React.FC<MessageListProps> = ({ chatName, messages, onSendMessage }) => {
+const MessageList: React.FC<MessageListProps> = ({ chatName ,activeTab,selectedChat,token}) => {
+  let socket : WebSocket;
+
+
+  let {
+    pushGroupMessage,
+    pushPvMessage,
+    setPvMessages,
+    setGroupMessages,
+    chatters,
+    groupChats,privateChats
+  } = useChatStore(state => state);
+
+  socket = new WebSocket("ws://localhost:8080/message");
+  socket.onopen = () => {
+    const t = JSON.stringify({ token });
+    socket.send(t);
+  };  
+  socket.onmessage = (e => {
+     let m = JSON.parse(e.data)
+     if (m['action_type'] == 0){  
+      if (m['target_type'] == 0){
+        pushPvMessage(m["chat_id"],{id:m['id'],created_at:m['created_at'],message:m['message'],pv_id:m['chat_id'],sender_id:m['sender_id'],seen_at:new Date()})
+      }else if (m['target_type'] ==1){
+        pushGroupMessage(m["chat_id"],{id:m['id'],created_at:m['created_at'],message:m['message'],group_id:m['reciever_id'],sender_id:m['sender_id']})
+
+      }
+
+     }else if (m['action_type'] == 1){ // TODO
+
+     }else if (m['action_type'] == 2){
+
+     }
+  })
+
+
+
+
   const [newMessage, setNewMessage] = useState('');
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
-      onSendMessage(newMessage);
+      let body = {
+        action_type : 0,
+        target_type : activeTab,
+        reciever_id : activeTab == 0?chatters.find((v) => v.pv_id == selectedChat)?.contact_id : selectedChat,
+        message : newMessage
+      }
+      socket.send(JSON.stringify(body))
       setNewMessage('');
     }
   };
+
+  
+
+
+  useEffect(() => {
+    console.log("active tab : " , activeTab);
+    if (!selectedChat){
+        return
+    }
+    fetch(`http://localhost:8080/restricted/${activeTab == 0 ? "pv" : "group"}/${selectedChat}/messages`,{
+        method:"GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+          }
+    }).then(res => res.json()).then(res => {
+        console.log("response ; " , res)
+        if (activeTab == 0)
+            setPvMessages(selectedChat,res);
+        else 
+        setGroupMessages(selectedChat,res);
+    })
+  },[activeTab,selectedChat])
+
+
+
 
   return (
     <Paper style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -37,7 +102,7 @@ const MessageList: React.FC<MessageListProps> = ({ chatName, messages, onSendMes
 
       {/* Messages List */}
       <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
-              {messages.map((message) => (
+              {(activeTab == 0? privateChats[privateChats.findIndex(d => d.id == selectedChat)].messages:groupChats[groupChats.findIndex(d => d.id == selectedChat)].messages).map((message:any) => (
                 <Box
                   key={message.id}
                   sx={{

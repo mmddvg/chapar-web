@@ -5,7 +5,6 @@ interface PvMessage{
     message : string;
     seen_at : Date;
     created_at : Date;
-    sender:string;
 }
 
 interface GroupMessage{
@@ -14,5 +13,4 @@ interface GroupMessage{
     message :string;
     sender_id : number;
     created_at : Date;
-    sender : string;
 }
