@@ -59,6 +59,8 @@ const useChatStore = create<ChatState>((set) => ({
 
   pushPvMessage: (pvId, message) =>
     set((state) => {
+      const exists = state.privateChats.find(d => d.id == pvId)?.messages.some(d => d.id == message.id)
+      if (exists) return state;
       const updatedPrivateChats = state.privateChats.map((chat) =>
         chat.id === pvId
           ? { ...chat, messages: [...chat.messages, message] }
