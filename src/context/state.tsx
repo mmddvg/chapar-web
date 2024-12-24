@@ -24,6 +24,8 @@ interface ChatState {
   privateChats: PrivateChat[];
   groupChats: GroupChat[];
 
+  serverUrl : string;
+
 
   addChatter:(chatter : User,is_contact : boolean) => void;
   addNonContactChatter:(Chatter:User,pv_id : string) => void;
@@ -36,6 +38,8 @@ interface ChatState {
 
   addPrivateChat: (chat: PrivateChat) => void;
   addGroupChat: (chat: GroupChat) => void;
+
+  switchServer: () => void;
 }
 
 const useChatStore = create<ChatState>((set) => ({
@@ -43,6 +47,11 @@ const useChatStore = create<ChatState>((set) => ({
   privateChats: [],
   groupChats: [],
   chatters : [],
+  serverUrl:"localhost:8080",
+
+
+  switchServer:()=> set(state => {return {serverUrl:state.serverUrl == "localhost:8080"?"localhost:8081":"localhost:8080"}}),
+
 
   addChatter:(chatter,is_contact)=> set(state => {
     const exists = state.chatters.some((c) => c.contact_id == chatter.contact_id);

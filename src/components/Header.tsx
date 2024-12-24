@@ -1,5 +1,6 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Box, Button } from '@mui/material';
+import useChatStore from '@/context/state';
 
 interface HeaderProps {
   name: string;
@@ -7,6 +8,8 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ name, username }) => {
+  let {serverUrl , switchServer}= useChatStore(state => state)
+  console.log("serverUrl : " , serverUrl)
   return (
     <AppBar position="static" color="primary">
       <Toolbar style={{ justifyContent: 'flex-end' }}>
@@ -17,6 +20,7 @@ const Header: React.FC<HeaderProps> = ({ name, username }) => {
           <Typography variant="caption" component="div">
             @{username}
           </Typography>
+          <Typography onClick={switchServer}>{serverUrl}</Typography>
         </Box>
       </Toolbar>
     </AppBar>

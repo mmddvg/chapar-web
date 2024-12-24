@@ -23,10 +23,11 @@ const MessageList: React.FC<MessageListProps> = ({ chatName ,activeTab,selectedC
     setPvMessages,
     setGroupMessages,
     chatters,
-    groupChats,privateChats
+    groupChats,privateChats,
+    serverUrl
   } = useChatStore(state => state);
 
-  socket = new WebSocket("ws://localhost:8080/message");
+  socket = new WebSocket(`ws://${serverUrl}/message`);
   socket.onopen = () => {
     const t = JSON.stringify({ token });
     socket.send(t);
