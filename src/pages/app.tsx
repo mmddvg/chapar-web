@@ -58,9 +58,12 @@ export default function Home() {
         }
   }).then(res => res.json()).then(res => {
     console.log("response : " , res);
+    if (res){
       for (let i of res){
         addChatter(i,true);
       }
+    }
+      
   });
   },[])
 
